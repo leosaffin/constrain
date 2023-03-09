@@ -1,0 +1,20 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "constrain"
+version = "0.0.1"
+authors = [
+  { name="Leo Saffin", email="l.saffin@leeds.ac.uk" },
+]
+description = "Calculate climate indices from CMIP6 and reanalysis data"
+readme = "README.md"
+requires-python = ">=3.7"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/leosaffin/constrain"
