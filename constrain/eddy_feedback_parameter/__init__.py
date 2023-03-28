@@ -2,6 +2,7 @@ from __future__ import division
 import numpy as np
 import iris
 import iris.analysis.cartography
+from iris.analysis.stats import pearsonr
 
 
 def horiz_EPflux_div(U, V):
@@ -170,7 +171,7 @@ def eddy_feedback_parameter(divF_h, Uz):
     """
 
     # Correlate zonal mean zonal wind with horizontal EP flux divergence
-    r = iris.analysis.stats.pearsonr(divF_h, Uz, corr_coords='time')
+    r = pearsonr(divF_h, Uz, corr_coords='time')
 
     # Calculate percentage variance explained
     r2 = r ** 2
