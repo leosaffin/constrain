@@ -16,10 +16,13 @@ def main():
 
     eof_pattern, ao_index = arctic_oscillation.from_eofs(mslp_anomaly)
 
-    iris.save(eof_pattern, "AO_pattern_TW2000_ERA5.nc")
-    iris.save(ao_index, "AO_index_TW2000_ERA5.nc")
+    iris.save(eof_pattern, "AO-pattern-TW98_ERA5.nc")
+    iris.save(ao_index, "AO-index-TW98_ERA5.nc")
 
-    plot_ao(eof_pattern, ao_index)
+    fig1, fig2 = plot_ao(eof_pattern, ao_index)
+    fig1.savefig("AO-pattern-TW98_ERA5.png")
+    fig2.savefig("AO-index-TW98_ERA5.png")
+    plt.show()
 
 
 def as_anomaly_by_month(cube):
@@ -38,14 +41,13 @@ def as_anomaly_by_month(cube):
 
 
 def plot_ao(eof_pattern, ao_index):
+    fig1 = plt.figure()
     plot.pcolormesh(eof_pattern, vmin=-1, vmax=1, cmap="seismic", projection="NorthPolarStereo")
-    plt.savefig("AO_pattern_TW2000_ERA5.png")
 
-    plt.figure()
+    fig2 = plt.figure()
     qplt.plot(ao_index)
-    plt.savefig("AO_index_TW2000_ERA5.png")
 
-    plt.show()
+    return fig1, fig2
 
 
 if __name__ == '__main__':
