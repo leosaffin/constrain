@@ -14,11 +14,11 @@ def regrid_to_coarsest(cube):
         if not coord.has_bounds():
             coord.guess_bounds()
 
-        boundaries[coord.name()] = (coord.bounds.min(), coord.bounds.max())
+        boundaries[coord.name()] = (coord.points.min(), coord.points.max())
 
-    coarse_cube = cube.regrid(coarse_grid, AreaWeighted())
+    # Only regrid to the region in the input (don't extrapolate to the full globe)
+    coarse_grid_subset = coarse_grid.intersection(**boundaries)
 
-    # Regridding extrapolates to full globe so reselect area
-    coarse_cube = coarse_cube.intersection(**boundaries)
+    coarse_cube = cube.regrid(coarse_grid_subset, AreaWeighted())
 
     return coarse_cube
