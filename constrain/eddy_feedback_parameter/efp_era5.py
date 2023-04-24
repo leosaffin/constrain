@@ -3,13 +3,16 @@ Calculate the eddy-feedback parameter from downloaded ERA5 data following
 Hardiman et al. (2022)
 
 Usage:
-  efp_era5 <filenames>... [--output_path=<str>]
+  efp_era5 <filenames>... [--grid=<float>] [--output_path=<str>]
 
 Options:
     -h --help
         Show this screen.
     <filenames>
         The files containing velocity data
+    --grid=<float>
+        The grid spacing in degress to regrid the input data to prior to calculating
+        the eddy feedback. If unspecified, use the native grid. [default: None]
     --output_path=<str>
         Where to save the results [default: ./]
 """
@@ -21,24 +24,31 @@ from docopt import docopt
 import iris
 from iris.coord_categorisation import add_month
 
-from constrain import eddy_feedback_parameter
+from constrain import eddy_feedback_parameter, regrid_to_degrees
 
 
 def main(
     filenames,
     output_path="./",
+    grid=None,
     months=("Dec", "Jan", "Feb"),
 ):
     ua = iris.load_cube(filenames, "eastward_wind")
     va = iris.load_cube(filenames, "northward_wind")
 
     # Extract requested months
+    months_str = "".join([m[0] for m in months])
     for cube in ua, va:
         add_month(cube, "time")
 
     months_cs = iris.Constraint(month=lambda x: x in months)
     ua = ua.extract(months_cs)
     va = va.extract(months_cs)
+
+    if grid is not None:
+        ua = regrid_to_degrees(ua, grid)
+        va = regrid_to_degrees(va, grid)
+        months_str += "_{}deg-grid".format(grid)
 
     # Calculate zonal acceleration due to horizontal EP flux divergence
     print("Calculating EP-flux divergence")
@@ -53,7 +63,6 @@ def main(
     divf_season = eddy_feedback_parameter.seasonal_mean(div_f, span=span)
     ua_zm_season = eddy_feedback_parameter.seasonal_mean(ua_zm, span=span)
 
-    months_str = "".join([m[0] for m in months])
     iris.save(
         divf_season, output_path + "era5_EP-flux-divergence_{}.nc".format(months_str)
     )
@@ -102,4 +111,8 @@ if __name__ == "__main__":
 
     args = docopt(__doc__)
     print(args)
-    main(args["<filenames>"], output_path=args["--output_path"])
+    main(
+        args["<filenames>"],
+        output_path=args["--output_path"],
+        grid=float(args["--grid"])
+    )
