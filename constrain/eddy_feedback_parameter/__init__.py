@@ -180,7 +180,7 @@ def eddy_feedback_parameter(divF_h, Uz):
     r2.rename("Pearson's r squared")
 
     # Average r2 over latitudes 25N-72N to get eddy feedback parameter
-    r2_box = r2.intersection(latitude=(25, 72))
+    r2_box = r2.intersection(latitude=(25, 72), ignore_bounds=True)
     weights = iris.analysis.cartography.cosine_latitude_weights(r2_box)
     EFP = r2_box.collapsed('latitude', iris.analysis.MEAN, weights=weights)
 

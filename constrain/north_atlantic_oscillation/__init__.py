@@ -35,7 +35,9 @@ def box_average(cube, box):
     xc = cube.coord(axis="x", dim_coords=True).name()
     yc = cube.coord(axis="y", dim_coords=True).name()
 
-    cube_in_box = cube.intersection(**{xc: (box[0], box[1]), yc: (box[2], box[3])})
+    cube_in_box = cube.intersection(
+        **{xc: (box[0], box[1]), yc: (box[2], box[3])}, ignore_bounds=True
+    )
 
     weights = area_weights(cube_in_box)
 
