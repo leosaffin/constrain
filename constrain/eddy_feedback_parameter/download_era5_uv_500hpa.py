@@ -1,5 +1,6 @@
 import cdsapi
 import iris
+from iris.util import equalise_attributes
 
 from constrain import regrid_to_coarsest
 
@@ -30,10 +31,9 @@ cubes = iris.load("download_*.nc")
 newcubes = iris.cube.CubeList()
 for variable in ["eastward_wind", "northward_wind"]:
     cubes_by_year = cubes.extract(variable)
-    for cube in cubes_by_year:
-        del cube.attributes["history"]
-
+    equalise_attributes(cubes_by_year)
     cube = cubes_by_year.concatenate_cube()
+    cube.coord("longitude").circular = True
     newcubes.append(cube)
 iris.save(newcubes, "era5_snapshot-u-v-500hpa_0N-90N_DJFM_1940-2022.nc")
 

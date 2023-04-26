@@ -4,6 +4,7 @@ import cdsapi
 import iris
 from iris.analysis import MEAN, Linear
 from iris.coord_categorisation import add_day_of_year, add_season_year
+from iris.util import equalise_attributes
 
 from irise import constants
 import constrain
@@ -38,6 +39,7 @@ for year in range(1940, 2020+1):
     gph = cubes.extract_cube("geopotential") / constants.g
     add_day_of_year(gph, "time")
     gph = gph.aggregated_by("day_of_year", MEAN)
+    gph.coord("longitude").circular = True
     gph = constrain.regrid_to_coarsest(gph)
     iris.save(gph, "era5_daily-mean-z-10hPa_{}.nc".format(year))
 
@@ -51,21 +53,12 @@ for year in range(1940, 2020+1):
 
     pathlib.Path(fname).unlink()
 
-u = iris.load("era5_daily-mean-zonal-mean-u-10hPa_*.nc")
-for cube in u:
-    del cube.attributes["history"]
-u = u.concatenate_cube()
-add_season_year(u, "time", seasons=["ndjfma", "mjjaso"])
-iris.save(u, "era5_daily-mean-zonal-mean-u-10hPa_1940-2020.nc")
-
-gph = iris.load("era5_daily-mean-z-10hPa_*.nc")
-for cube in gph:
-    del cube.attributes["history"]
-gph = gph.concatenate_cube()
-add_season_year(gph, "time", seasons=["ndjfma", "mjjaso"])
-iris.save(gph, "era5_daily-mean-z-10hPa_1940-2020.nc")
-
-        
-        
-        
-        
+for filename in [
+    "era5_daily-mean-zonal-mean-u-10hPa_*.nc",
+    "era5_daily-mean-z-10hPa_1940-2020.nc",
+]:
+    cubes = iris.load(filename)
+    equalise_attributes(u)
+    cube = cubes.concatenate_cube()
+    add_season_year(cube, "time", seasons=["ndjfma", "mjjaso"])
+    iris.save(cube, filename.replace("*", "1940-2020"))

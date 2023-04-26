@@ -26,6 +26,7 @@ c.retrieve(
 
 # Regrid the ERA5 data to the coarsest CMIP6 grid
 cube = iris.load_cube("era5_monthly_mean_mslp_20N-90N_NDJFMA.nc")
+cube.coord("longitude").circular = True
 coarse_cube = regrid_to_coarsest(cube)
 iris.save(coarse_cube, "era5_monthly_mean_CanESM5_grid_mslp_20N-90N_NDJFMA.nc")
 

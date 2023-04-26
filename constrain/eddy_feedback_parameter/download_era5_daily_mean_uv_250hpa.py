@@ -42,6 +42,7 @@ for year in range(1940, 2022 + 1):
     for cube in cubes:
         add_day_of_year(cube, "time")
         cube_daily_mean = cube.aggregated_by("day_of_year", MEAN)
+        cube_daily_mean.coord("longitude").circular = True
         cube_daily_mean_coarse_grid = constrain.regrid_to_coarsest(cube_daily_mean)
         newcubes.append(cube_daily_mean_coarse_grid)
 
