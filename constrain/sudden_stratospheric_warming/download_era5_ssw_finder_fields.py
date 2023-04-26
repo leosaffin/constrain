@@ -58,7 +58,7 @@ for filename in [
     "era5_daily-mean-z-10hPa_1940-2020.nc",
 ]:
     cubes = iris.load(filename)
-    equalise_attributes(u)
+    equalise_attributes(cubes)
     cube = cubes.concatenate_cube()
     add_season_year(cube, "time", seasons=["ndjfma", "mjjaso"])
     iris.save(cube, filename.replace("*", "1940-2020"))
