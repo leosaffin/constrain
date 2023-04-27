@@ -15,7 +15,9 @@ def regrid_to_coarsest(cube, allow_partial_areas=True):
 
     Args:
         cube (iris.cube.Cube): The cube to be regridded
-        allow_partial_areas (bool):
+        allow_partial_areas (bool): Whether to regrid onto the coarse grid where there
+            is only a partial overlap between gridboxes. If False these boundaries will
+            be masked
 
     Returns:
         iris.cube.Cube: The regridded cube
@@ -29,12 +31,15 @@ def regrid_to_coarsest(cube, allow_partial_areas=True):
     return cube.regrid(coarse_grid_subset, AreaWeighted())
 
 
-def regrid_to_degrees(cube, spacing):
+def regrid_to_degrees(cube, spacing, allow_partial_areas=True):
     """Regrid to a longitude-latitude grid with the specified spacing
 
     Args:
         cube (iris.cube.Cube): The cube to be regridded
         spacing (scalar): The grid spacing in degress
+        allow_partial_areas (bool): Whether to regrid onto the coarse grid where there
+            is only a partial overlap between gridboxes. If False these boundaries will
+            be masked
 
     Returns:
         iris.cube.Cube: The regridded cube
@@ -42,6 +47,9 @@ def regrid_to_degrees(cube, spacing):
     new_grid = _n_degree_grid(spacing)
 
     new_grid_subset = _subset_cube(new_grid, cube)
+
+    if allow_partial_areas:
+        _match_bounds(cube, new_grid_subset)
 
     return cube.regrid(new_grid_subset, AreaWeighted())
 
