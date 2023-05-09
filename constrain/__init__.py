@@ -105,7 +105,7 @@ def _match_bounds(cube_to_regrid, coarse_cube):
 
 def _n_degree_grid(spacing):
     longitude = DimCoord(
-        points=np.arange(0, 360, spacing),
+        points=np.arange(0 + spacing / 2, 360, spacing),
         standard_name="longitude",
         units="degrees",
         circular=True,
@@ -113,7 +113,7 @@ def _n_degree_grid(spacing):
     longitude.guess_bounds()
 
     latitude = DimCoord(
-        points=np.arange(-90, 90, spacing),
+        points=np.arange(-90 + spacing / 2, 90, spacing),
         standard_name="latitude",
         units="degrees",
     )
