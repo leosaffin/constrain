@@ -19,7 +19,7 @@ jobs:
           channels: conda-forge,defaults
           channel-priority: true
           activate-environment: constrain
-          environment-file: conda-environment.yml
+          environment-file: conda-environment.yaml
       - shell: bash -el {0}
         run: |
           pip install .
