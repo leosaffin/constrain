@@ -10,7 +10,7 @@ Options:
         Show this screen.
     <filenames>
         The files containing velocity data
-    --grid=<float>
+    --grid=<str>
         The grid spacing in degress to regrid the input data to prior to calculating
         the eddy feedback. If unspecified, use the native grid. [default: None]
     --output_path=<str>
@@ -41,11 +41,12 @@ def main(
     for cube in ua, va:
         add_month(cube, "time")
 
-    months_cs = iris.Constraint(month=lambda x: x in months)
+    months_cs = iris.Constraint(month=months)
     ua = ua.extract(months_cs)
     va = va.extract(months_cs)
 
-    if grid is not None:
+    if grid is not None and grid != "None":
+        grid = float(grid)
         ua = regrid_to_degrees(ua, grid)
         va = regrid_to_degrees(va, grid)
         months_str += "_{}deg-grid".format(grid)
@@ -114,5 +115,5 @@ if __name__ == "__main__":
     main(
         args["<filenames>"],
         output_path=args["--output_path"],
-        grid=float(args["--grid"])
+        grid=args["--grid"]
     )
