@@ -1,0 +1,15 @@
+name: constrain
+channels:
+  - conda-forge
+
+dependencies:
+    - iris
+    - eofs
+    - pandas
+    - python-dateutil
+    - more-itertools
+    - requests
+    - docopt
+    - cdsapi
+
+
