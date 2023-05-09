@@ -23,4 +23,5 @@ jobs:
       - shell: bash -el {0}
         run: |
           pip install .
+          pip install pytest
           pytest
