@@ -81,4 +81,8 @@ if __name__ == "__main__":
 
     args = docopt(__doc__)
     print(args)
-    main(args["<filenames>"], output_path=args["--output_path"])
+    main(
+        args["<filenames>"],
+        output_path=args["--output_path"],
+        definition=args["--definition"],
+    )
