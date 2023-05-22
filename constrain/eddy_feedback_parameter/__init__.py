@@ -126,10 +126,11 @@ def seasonal_mean(cube, span):
     """
 
     # Add required time coordinates
-    iris.coord_categorisation.add_season_year(cube, 'time')
+    if "season_year" not in [c.name() for c in cube.coords()]:
+        iris.coord_categorisation.add_season_year(cube, "time")
 
     # Calculate seasonal mean
-    cube_b = cube.aggregated_by('season_year', iris.analysis.MEAN)
+    cube_b = cube.aggregated_by("season_year", iris.analysis.MEAN)
     cube_b = cube_b.extract(iris.Constraint(time=lambda t: (t.bound[1] - \
                                                             t.bound[0]) >= span))
 
@@ -167,7 +168,7 @@ def eddy_feedback_parameter(divF_h, Uz):
     """
 
     # Correlate zonal mean zonal wind with horizontal EP flux divergence
-    r = pearsonr(divF_h, Uz, corr_coords='time')
+    r = pearsonr(divF_h, Uz, corr_coords="season_year")
 
     # Calculate percentage variance explained
     r2 = r ** 2
@@ -463,34 +464,26 @@ def dX_dlon(X):
     @author: Christine McKenna
 
     ============================================================
-    Purpose: Calculates the derivative in longitude of a field X
-             with dimensions (time,lat,lon), where longitude does
-             not wrap around.
+    Purpose: Calculates the derivative in longitude of a field X and returns the
+             derivative at the points of the input field
 
-    Input: X(time,lat,lon) - field X to calculate derivative
-                             for, must be an iris cube
+    Input: X - field X to calculate derivative for, must be an iris cube
 
-    Output: dX_dlon(time,lat,lon) - derivative of X in longitude
+    Output: dX_dlon - derivative of X in longitude
 
     """
 
     # Extract longitude coordinates and convert to radians
-    lons = X.coord('longitude').copy()
-    lons.convert_units('radians')
-    lons = lons.points[np.newaxis, np.newaxis, :]
+    lons = X.coord('longitude')
+    original_units = lons.units
+    lons.convert_units("radians")
 
     # Create cube to save result in
-    dX_dlon = X.copy()
+    dX_dlon = differentiate(X, "longitude")
+    dX_dlon = dX_dlon.interpolate([("longitude", lons.points)], Linear())
 
-    # One-sided finite difference for first longitude
-    dX_dlon.data[:, :, 0] = (X.data[:, :, 1] - X.data[:, :, 0]) / \
-                            (lons[:, :, 1] - lons[:, :, 0])
-    # Centered finite difference for longitudes in between
-    dX_dlon.data[:, :, 1:-1] = (X.data[:, :, 2:] - X.data[:, :, :-2]) / \
-                               (lons[:, :, 2:] - lons[:, :, :-2])
-    # One-sided finite difference for last longitude
-    dX_dlon.data[:, :, -1] = (X.data[:, :, -1] - X.data[:, :, -2]) / \
-                             (lons[:, :, -1] - lons[:, :, -2])
+    for cube in [X, dX_dlon]:
+        cube.coord("longitude").convert_units(original_units)
 
     return dX_dlon
 

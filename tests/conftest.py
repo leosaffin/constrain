@@ -9,7 +9,7 @@ def _cube3d_lat_lon():
     cube.coord("grid_longitude").rename("longitude")
     cube.coord("grid_latitude").rename("latitude")
 
-    return cube
+    return cube.copy(data=cube.data.astype(float))
 
 
 @pytest.fixture(scope="session")
