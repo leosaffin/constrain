@@ -2,6 +2,8 @@ from __future__ import division
 import numpy as np
 import iris
 import iris.analysis.cartography
+from iris.analysis import Linear
+from iris.analysis.calculus import differentiate
 from iris.analysis.stats import pearsonr
 
 from constrain.filters import lowpass_lanczos
@@ -27,10 +29,10 @@ def horiz_EPflux_div(U, V):
 
     Category: Diagnostics
 
-    Input: U(day,lat,lon) - iris cube of zonal wind
-           V(day,lat,lon) - iris cube of meridional wind
+    Input: U(..., lat, lon) - iris cube of zonal wind
+           V(..., lat, lon) - iris cube of meridional wind
 
-    Output: divF_h(day,lat) - iris cube of horizontal EP flux
+    Output: divF_h(..., lat) - iris cube of horizontal EP flux
                               divergence
     """
 
@@ -74,21 +76,13 @@ def horiz_EPflux_div(U, V):
     ## Calculate UsVs_z*cos2lat (Flat*coslat)
     Flatcoslat = UsVs_z * cos2lat
 
+
     ## Calculate d(Flat*coslat)/dlat
-    dFlatcoslat_dlat = Flatcoslat.copy()
-    Flatcoslat_arr = Flatcoslat.data
-    # One-sided finite difference for first latitude
-    dFlatcoslat_dlat.data[:, 0] = (Flatcoslat_arr[:, 1] - \
-                                   Flatcoslat_arr[:, 0]) / \
-                                  (lats[1] - lats[0])
-    # Centered finite difference for latitudes in between
-    dFlatcoslat_dlat.data[:, 1:-1] = (Flatcoslat_arr[:, 2:] - \
-                                      Flatcoslat_arr[:, :-2]) / \
-                                     (lats[2:] - lats[:-2])
-    # One-sided finite difference for last latitude
-    dFlatcoslat_dlat.data[:, -1] = (Flatcoslat_arr[:, -1] - \
-                                    Flatcoslat_arr[:, -2]) / \
-                                   (lats[-1] - lats[-2])
+    Flatcoslat.coord("latitude").convert_units('radians')
+    dFlatcoslat_dlat = differentiate(Flatcoslat, "latitude")
+    dFlatcoslat_dlat = dFlatcoslat_dlat.interpolate(
+        [("latitude", Flatcoslat.coord("latitude").points)], Linear()
+    )
 
     ## Calculate horizontal EP flux divergence
     divF_h = dFlatcoslat_dlat * (-1 / a / cos2lat)
