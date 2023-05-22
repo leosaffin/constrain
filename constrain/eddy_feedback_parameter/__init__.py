@@ -427,16 +427,16 @@ def background_deformation_flow(u, v, months, window, f, definition="MC89"):
     ### ---------------------------------------------------------------
 
     ## Calculate required derivatives
-    dU_dlon = dX_dlon(U)
-    dV_dlon = dX_dlon(V)
+    dU_dlon = differentiate_horizontal(U, "longitude")
+    dV_dlon = differentiate_horizontal(V, "latitude")
 
     if definition == "MC89":
-        dU_dlat = dX_dlat(U)
-        dV_dlat = dX_dlat(V)
+        dU_dlat = differentiate_horizontal(U, "latitude")
+        dV_dlat = differentiate_horizontal(V, "latitude")
 
     elif definition == "FY02":
-        dVcoslat_dlat = dX_dlat(V * coslat)
-        dUcoslat_dlat = dX_dlat(U * coslat)
+        dVcoslat_dlat = differentiate_horizontal(V * coslat, "latitude")
+        dUcoslat_dlat = differentiate_horizontal(U * coslat, "latitude")
 
     ## Calculate D_lon and D_lat
     if definition == "MC89":
@@ -457,70 +457,33 @@ def background_deformation_flow(u, v, months, window, f, definition="MC89"):
     return D_lon, D_lat
 
 
-def dX_dlon(X):
+def differentiate_horizontal(cube, coord):
+
+    """Calculates the derivative of the input cube with respect to the horizontal
+    coordinate and returns the derivative on the grid of the input field
+
+
+    Args:
+        cube (iris.cube.Cube): Field to calculate the derivative for
+        coord (str): The coordinate to calculate the derivative over
+
+    Returns:
+        iris.cube.Cube:
+            Derivative of the input cube with respect to the specified coord in units
+            per radian
+
     """
-    Created on Mon Feb 06 16:45 2023
-
-    @author: Christine McKenna
-
-    ============================================================
-    Purpose: Calculates the derivative in longitude of a field X and returns the
-             derivative at the points of the input field
-
-    Input: X - field X to calculate derivative for, must be an iris cube
-
-    Output: dX_dlon - derivative of X in longitude
-
-    """
-
     # Extract longitude coordinates and convert to radians
-    lons = X.coord('longitude')
-    original_units = lons.units
-    lons.convert_units("radians")
+    x = cube.coord(coord)
+    original_units = x.units
+    x.convert_units("radians")
 
-    # Create cube to save result in
-    dX_dlon = differentiate(X, "longitude")
-    dX_dlon = dX_dlon.interpolate([("longitude", lons.points)], Linear())
+    # Calculate the derivative and interpolate to the original grid
+    d_dx = differentiate(cube, coord)
+    d_dx = d_dx.interpolate([(coord, x.points)], Linear())
 
-    for cube in [X, dX_dlon]:
-        cube.coord("longitude").convert_units(original_units)
+    # Return coordinate units to original on input
+    for cube in [cube, d_dx]:
+        cube.coord(coord).convert_units(original_units)
 
-    return dX_dlon
-
-
-def dX_dlat(X):
-    """
-    Created on Mon Feb 06 16:53 2023
-
-    @author: Christine McKenna
-
-    ============================================================
-    Purpose: Calculates the derivative in latitude of a field X
-             with dimensions (time,lat,lon).
-
-    Input: X(time,lat,lon) - field X to calculate derivative
-                             for, must be an iris cube
-
-    Output: dX_dlat(time,lat,lon) - derivative of X in latitude
-
-    """
-
-    # Extract latitude coordinates and convert to radians
-    lats = X.coord('latitude').copy()
-    lats.convert_units('radians')
-    lats = lats.points[np.newaxis, :, np.newaxis]
-
-    # Create cube to save result in
-    dX_dlat = X.copy()
-
-    # One-sided finite difference for first latitude
-    dX_dlat.data[:, 0, :] = (X.data[:, 1, :] - X.data[:, 0, :]) / \
-                            (lats[:, 1, :] - lats[:, 0, :])
-    # Centered finite difference for latitudes in between
-    dX_dlat.data[:, 1:-1, :] = (X.data[:, 2:, :] - X.data[:, :-2, :]) / \
-                               (lats[:, 2:, :] - lats[:, :-2, :])
-    # One-sided finite difference for last latitude
-    dX_dlat.data[:, -1, :] = (X.data[:, -1, :] - X.data[:, -2, :]) / \
-                             (lats[:, -1, :] - lats[:, -2, :])
-
-    return dX_dlat
+    return d_dx

@@ -2,7 +2,7 @@ import pytest
 
 from numpy.testing import assert_allclose
 
-from constrain.eddy_feedback_parameter import horiz_EPflux_div, dX_dlon, dX_dlat
+from constrain.eddy_feedback_parameter import horiz_EPflux_div, differentiate_horizontal
 
 
 @pytest.mark.parametrize("cube", ["cube3d_lat_lon", "cube4d_lat_lon"])
@@ -23,8 +23,10 @@ def test_horiz_EPflux_div_4d(request, cube):
 
 
 @pytest.mark.parametrize("cube", ["cube3d_lat_lon", "cube4d_lat_lon"])
-def test_dx_dlon(request, cube):
+@pytest.mark.parametrize("coord, result", [("longitude", 57.29577951), ("latitude", 630.253575)])
+def test_dx_dlon(request, cube, coord, result):
     cube = request.getfixturevalue(cube)
-    result = dX_dlon(cube)
+    d_dx = differentiate_horizontal(cube, coord)
 
-    assert_allclose(result.data, 57.29577951)
+    print(d_dx.data)
+    assert_allclose(d_dx.data, result)
