@@ -35,65 +35,57 @@ def horiz_EPflux_div(U, V):
     Output: divF_h(..., lat) - iris cube of horizontal EP flux
                               divergence
     """
-
-    ### ---------------------------------------------------------------
-    ### Sort cube coordinates and define some required parameters
-    ### ---------------------------------------------------------------
-
-    ## Convert latitudes to radians and calculate cos(latitude)
-    lats = U.coord('latitude').copy()
-    lats.convert_units('radians')
-    lats = lats.points
-    coslat = np.cos(lats)[np.newaxis]
-    cos2lat = coslat ** 2
-
-    ## Define radius of Earth in metres
+    # Define radius of Earth in metres
     a = iris.analysis.cartography.DEFAULT_SPHERICAL_EARTH_RADIUS
 
-    ### ---------------------------------------------------------------
-    ### Calculate momentum flux, UsVs_z
-    ### (s = zonal deviation, z = zonal mean)
-    ### ---------------------------------------------------------------
+    # ---------------------------------------------------------------
+    # Calculate momentum flux, UsVs_z
+    # (s = zonal deviation, z = zonal mean)
+    # ---------------------------------------------------------------
+    # NB: use fact that UsVs_z = UV_z - UzVz
 
-    ## NB: use fact that UsVs_z = UV_z - UzVz
-
-    ## Calculate zonal mean of individual fields
+    # Calculate zonal mean of individual fields
     Uz = U.collapsed(['longitude'], iris.analysis.MEAN)
     Vz = V.collapsed(['longitude'], iris.analysis.MEAN)
 
-    ## Calculate zonal mean of products of fields
+    # Calculate zonal mean of products of fields
     UV_z = (U * V).collapsed(['longitude'], iris.analysis.MEAN)
 
-    ## Now calculate momentum flux
+    # Calculate momentum flux
     UsVs_z = UV_z - Uz * Vz
 
-    ### -----------------------------------------------------------------
-    ### Calculate zonal accel due to divergence of horiz EP flux, Flat
-    ### -----------------------------------------------------------------
+    # Convert latitudes to radians and calculate cos(latitude)
+    lats = UsVs_z.coord('latitude').copy()
+    lats.convert_units('radians')
+    lats = lats.points
+    cos2lat = np.cos(lats) ** 2
 
-    ## Calculation is -(1/a/cos2lat) * d(UsVs_z*cos2lat)/dlat
+    # Match cos2lat shape to cube
+    coords = [c.name() for c in UsVs_z.dim_coords]
+    idx_lat = coords.index("latitude")
+    idx = [np.newaxis] * len(UsVs_z.shape)
+    idx[idx_lat] = Ellipsis
+    cos2lat = cos2lat[tuple(idx)]
 
-    ## Calculate UsVs_z*cos2lat (Flat*coslat)
+    # -----------------------------------------------------------------
+    # Calculate zonal accel due to divergence of horiz EP flux, Flat
+    # -----------------------------------------------------------------
+    # Calculation is -(1/a/cos2lat) * d(UsVs_z*cos2lat)/dlat
+
+    # Calculate UsVs_z*cos2lat (Flat*coslat)
     Flatcoslat = UsVs_z * cos2lat
 
+    # Calculate d(Flat*coslat)/dlat
+    dFlatcoslat_dlat = differentiate_horizontal(Flatcoslat, "latitude")
 
-    ## Calculate d(Flat*coslat)/dlat
-    Flatcoslat.coord("latitude").convert_units('radians')
-    dFlatcoslat_dlat = differentiate(Flatcoslat, "latitude")
-    dFlatcoslat_dlat = dFlatcoslat_dlat.interpolate(
-        [("latitude", Flatcoslat.coord("latitude").points)], Linear()
-    )
-
-    ## Calculate horizontal EP flux divergence
+    # Calculate horizontal EP flux divergence
     divF_h = dFlatcoslat_dlat * (-1 / a / cos2lat)
 
-    ## Update metadata following calculations
+    # Update metadata following calculations
     divF_h.rename('tendency_of_eastward_wind_due_to_horizontal_eliassen_' + \
                   'palm_flux_divergence')
     divF_h.units = 'm s-2'
-    divF_h.coord('latitude').convert_units('degrees')
 
-    ## Return horizontal EP flux divergence
     return divF_h
 
 
