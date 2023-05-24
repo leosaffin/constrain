@@ -473,17 +473,16 @@ def differentiate_horizontal(cube, coord):
             per radian
 
     """
-    # Extract longitude coordinates and convert to radians
-    x = cube.coord(coord)
-    original_units = x.units
-    x.convert_units("radians")
-
     # Calculate the derivative and interpolate to the original grid
     d_dx = differentiate(cube, coord)
-    d_dx = d_dx.interpolate([(coord, x.points)], Linear())
+    d_dx = d_dx.interpolate([(coord, cube.coord(coord).points)], Linear())
 
-    # Return coordinate units to original on input
-    for cube in [cube, d_dx]:
-        cube.coord(coord).convert_units(original_units)
+    # Convert to original to units which makes sure the differentiation was done in
+    # radians
+    d_dx.convert_units(cube.units)
+
+    # Re-add the original coordinate to fix annoying floating points errors and losing
+    # coordinate bounds
+    d_dx.replace_coord(cube.coord(coord))
 
     return d_dx

@@ -26,7 +26,9 @@ def test_horiz_EPflux_div_4d(request, cube):
 @pytest.mark.parametrize("coord, result", [("longitude", 57.29577951), ("latitude", 630.253575)])
 def test_dx_dlon(request, cube, coord, result):
     cube = request.getfixturevalue(cube)
+    cube.coord(coord).guess_bounds()
     d_dx = differentiate_horizontal(cube, coord)
 
-    print(d_dx.data)
+    assert (d_dx.coord(coord).points == cube.coord(coord).points).all()
+    assert (d_dx.coord(coord).bounds == cube.coord(coord).bounds).all()
     assert_allclose(d_dx.data, result)
