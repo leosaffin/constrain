@@ -30,16 +30,26 @@ def main(
     ua = iris.load_cube(filenames, "eastward_wind")
     va = iris.load_cube(filenames, "northward_wind")
 
-    for cube in [ua, va]:
+    for cube in ua, va:
         add_month(cube, "time")
-        add_season_year(cube, "time")
+        add_season_year(cube, "time", seasons=("ndjfma", "mjjaso"))
 
-    lefp = eddy_feedback_parameter.local_eddy_feedback(ua, va, months=months)
-    lefp = lefp.collapsed("season_year", iris.analysis.MEAN)
+    lefp_all_levels = iris.cube.CubeList()
+    pressure_levels = ua.coord("pressure_level").points
+    for pressure_level in pressure_levels:
+        print(pressure_level)
+        cs = iris.Constraint(pressure_level=pressure_level)
+        ua_s = ua.extract(cs)
+        va_s = va.extract(cs)
+
+        lefp = eddy_feedback_parameter.local_eddy_feedback(ua_s, va_s, months=months)
+        lefp_all_levels.append(lefp)
 
     # Save merged eddy feedback parameter 2d maps
+    lefp_all_levels = lefp_all_levels.merge()
+    lefp_all_levels = lefp_all_levels.concatenate_cube()
     iris.save(
-        lefp, output_path + "G_mean_{}_lat_lon_DJF_ERA5.nc".format(definition)
+        lefp_all_levels, output_path + "G_mean_{}_lat_lon_DJF_ERA5.nc".format(definition)
     )
 
 
