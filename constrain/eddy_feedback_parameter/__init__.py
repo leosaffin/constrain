@@ -175,6 +175,73 @@ def eddy_feedback_parameter(divF_h, Uz):
     return EFP
 
 
+def local_eddy_feedback(ua, va, months=("Dec", "Jan", "Feb"), f1=2, f2=6, f3=10, window=61, definition="MC89"):
+    """Calculates the eddy feedback G=E.D as defined in Mak and Cai 1989
+
+    https://doi.org/10.1175/1520-0469(1989)046<3289:LBI>2.0.CO;2
+
+    G=E.D is the barotropic energy generation rate. It diagnoses the kinetic energy
+    exchange between transient eddies (described by E) and the background flow
+    (described by D). Positive G means eddies grow and extract energy from the
+    background flow, thereby decelerating it; negative G means eddies decay and lose
+    energy to the background flow, thereby accelarating it.
+
+    The equation for G is given in Cartesian coordinates in Mak and Cai 1989, but we use
+    the version in spherical geometry. For details see the functions used in this
+    script.
+
+    Args:
+        ua (iris.cube.Cube): Zonal wind
+        va (iris.cube.Cube): Meridional wind
+        months: The months to output the local eddy feedback over
+            (default is ("Dec", "Jan", "Feb"))
+        f1 (int): Short timescale limit for eddies when filtering with Lanczos filter.
+            Default is 2
+        f2 (int): Long timescale limit for eddies when filtering with Lanczos filter.
+            Default is 6
+        f3 (int): Short timescale limit for low-pass winds. Default is 10
+        window (int): The window to calculate Lanczos filters over. Note that the input
+            ua and va must have enough padding to calculate the filters over. For
+            example, using the default parameters with daily data means the winds need
+            an extra month (30 days) at either end. So NDJFM for outputting DJF eddy
+            feedback. Default is 61
+        definition (str): Either "MC89" to us the Mak and Cai (1989) definition
+            (default), or "FY02" to use the Fukutomi and Yasunari (2002) definition
+
+    Returns:
+        iris.cube.Cube
+            The local eddy feedback on the same grid as the input winds
+    """
+    # Calculate by year to not use too much memory
+    # Ignore first and last year as they are not full seasons
+    lefp_all_years = iris.cube.CubeList()
+    season_years = list(set(ua.coord("season_year").points))[1:-1]
+    for year in season_years:
+        cs = iris.Constraint(season_year=year)
+        ua_s = ua.extract(cs)
+        va_s = va.extract(cs)
+
+        # Calculate E-vectors
+        e_lon, e_lat = Evectors(
+            ua_s, va_s, months=months, window=window, f1=f1, f2=f2, definition=definition
+        )
+
+        # Calculate background deformation flow, D
+        d_lon, d_lat = background_deformation_flow(
+            ua_s, va_s, months=months, window=window, f=f3, definition=definition
+        )
+
+        # Calculate barotropic energy generation rate, G=E.D, and
+        # correct metadata
+        lefp = e_lon * d_lon + e_lat * d_lat
+        lefp.rename('barotropic_energy_generation_rate')
+        lefp.units = 'm2 s-3'
+
+        lefp_all_years.append(lefp)
+
+    return lefp.concatenate_cube()
+
+
 def Evectors(u, v, months, window, f1, f2, definition="MC89"):
     """
     Created on Thurs Feb 02 18:35 2023
