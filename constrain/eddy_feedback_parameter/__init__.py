@@ -239,7 +239,7 @@ def local_eddy_feedback(ua, va, months=("Dec", "Jan", "Feb"), f1=2, f2=6, f3=10,
 
         lefp_all_years.append(lefp)
 
-    return lefp.concatenate_cube()
+    return lefp_all_years.concatenate_cube()
 
 
 def Evectors(u, v, months, window, f1, f2, definition="MC89"):
