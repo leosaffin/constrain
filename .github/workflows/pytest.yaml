@@ -22,6 +22,7 @@ jobs:
           environment-file: conda-environment.yaml
       - shell: bash -el {0}
         run: |
+          pip install filelock
           pip install .
           pip install pytest
           pytest
